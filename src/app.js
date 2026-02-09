@@ -4,7 +4,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/authRoutes.js";
 import formRoutes from "./routes/formRoutes.js";
-
+import adminRoutes from "./routes/adminRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
 dotenv.config();
 const app = express();
 
@@ -50,6 +51,8 @@ app.get("/health", async (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/form", formRoutes);
 
+app.use("/api/admin", adminRoutes);
+app.use("/api/profile", profileRoutes);
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
