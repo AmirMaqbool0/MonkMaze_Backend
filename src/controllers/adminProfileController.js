@@ -1,7 +1,10 @@
 import bcrypt from "bcryptjs";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
+import cloudinary from "../utils/cloudinary.js";
 
 /* ===============================
    👤 UPDATE PROFILE
+   Upload avatar ONLY when updating
 ================================ */
 export const updateProfile = async (req, res) => {
   try {
@@ -10,14 +13,48 @@ export const updateProfile = async (req, res) => {
     if (!admin)
       return res.status(401).json({ message: "Admin not authorized" });
 
+    // Update text fields
     admin.name = req.body.name?.trim() || admin.name;
     admin.email = req.body.email?.trim() || admin.email;
+
+    /* ===============================
+       🖼️ HANDLE IMAGE UPDATE
+       Only runs if file exists
+    =============================== */
+    if (req.file) {
+      try {
+        // Upload new image to Cloudinary
+        const uploaded = await uploadToCloudinary(
+          req.file.buffer,
+          req.file.originalname
+        );
+
+        // Delete old image if exists
+        if (admin.avatar?.public_id) {
+          await cloudinary.uploader.destroy(admin.avatar.public_id);
+        }
+
+        // Save new avatar
+        admin.avatar = {
+          url: uploaded.secure_url,
+          public_id: uploaded.public_id,
+        };
+      } catch (uploadError) {
+        console.error("Cloudinary upload error:", uploadError.message);
+        return res.status(500).json({ message: "Image upload failed" });
+      }
+    }
 
     await admin.save();
 
     res.json({
       message: "Profile updated successfully",
-      admin: { id: admin._id, name: admin.name, email: admin.email },
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        avatar: admin.avatar?.url || null,
+      },
     });
   } catch (err) {
     console.error("Profile update error:", err.message);
