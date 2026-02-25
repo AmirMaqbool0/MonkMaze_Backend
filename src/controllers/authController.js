@@ -26,7 +26,12 @@ export const registerAdmin = async (req, res) => {
 
     res.status(201).json({
       message: "Admin created successfully",
-      admin: { id: admin._id, name: admin.name, email: admin.email },
+      admin: { 
+        id: admin._id, 
+        name: admin.name, 
+        email: admin.email,
+        avatar: admin.avatar?.url || null 
+      },
     });
   } catch (error) {
     console.error(error);
@@ -79,7 +84,14 @@ export const loginAdmin = async (req, res) => {
     res.status(200).json({
       message: "Login successful",
       token,
-      admin: { id: admin._id, name: admin.name, email: admin.email },
+      admin: { 
+        id: admin._id, 
+        name: admin.name, 
+        email: admin.email,
+        avatar: admin.avatar?.url || null,
+        role: admin.role,
+        isBlocked: admin.isBlocked
+      },
     });
   } catch (error) {
     console.error(error);
@@ -143,5 +155,33 @@ export const resetPassword = async (req, res) => {
     res.json({ message: "Password reset successful" });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+/* =================================
+   👤 GET CURRENT ADMIN (Optional but recommended)
+================================= */
+export const getCurrentAdmin = async (req, res) => {
+  try {
+    const admin = req.admin;
+    
+    if (!admin) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    res.json({
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        avatar: admin.avatar?.url || null,
+        role: admin.role,
+        isBlocked: admin.isBlocked,
+        createdAt: admin.createdAt
+      }
+    });
+  } catch (err) {
+    console.error("Error fetching admin:", err.message);
+    res.status(500).json({ message: "Failed to fetch admin data" });
   }
 };
