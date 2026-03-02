@@ -2,7 +2,8 @@ import express from "express";
 import { 
   updateProfile, 
   changePassword,
-  requestEmailChange
+  requestEmailChange,
+  verifyEmailChange
 } from "../controllers/adminProfileController.js";
 
 import { protect } from "../middleware/authMiddleware.js";
@@ -29,5 +30,5 @@ router.put("/change-password", protect, changePassword);
   📧 Request Email Change (Send OTP)
 */
 router.post("/change-email/request", protect, requestEmailChange);
-
+router.post("/change-email/verify", protect, verifyEmailChange);
 export default router;

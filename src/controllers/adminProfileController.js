@@ -158,3 +158,44 @@ export const requestEmailChange = async (req, res) => {
     res.status(500).json({ message: "Failed to send OTP" });
   }
 };
+
+/* ===============================
+   ✅ VERIFY OTP & CHANGE EMAIL
+================================ */
+export const verifyEmailChange = async (req, res) => {
+  try {
+    const admin = req.admin;
+    const { otp } = req.body;
+
+    if (!admin)
+      return res.status(401).json({ message: "Admin not authorized" });
+
+    if (!admin.emailChange?.otp)
+      return res.status(400).json({ message: "No email change request found" });
+
+    // check otp match
+    if (admin.emailChange.otp !== otp)
+      return res.status(400).json({ message: "Invalid OTP" });
+
+    // check expiry
+    if (admin.emailChange.otpExpire < Date.now())
+      return res.status(400).json({ message: "OTP expired" });
+
+    // update email
+    admin.email = admin.emailChange.newEmail;
+
+    // clear temporary data
+    admin.emailChange = undefined;
+
+    await admin.save();
+
+    res.json({
+      message: "Email changed successfully",
+      email: admin.email,
+    });
+
+  } catch (error) {
+    console.error("Verify email error:", error.message);
+    res.status(500).json({ message: "Failed to verify OTP" });
+  }
+};
