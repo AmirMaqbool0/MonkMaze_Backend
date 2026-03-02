@@ -1,7 +1,12 @@
 import express from "express";
-import { updateProfile, changePassword } from "../controllers/adminProfileController.js";
+import { 
+  updateProfile, 
+  changePassword,
+  requestEmailChange
+} from "../controllers/adminProfileController.js";
+
 import { protect } from "../middleware/authMiddleware.js";
-import upload from "../middleware/upload.js"; // 👈 add this
+import upload from "../middleware/upload.js";
 
 const router = express.Router();
 
@@ -13,11 +18,16 @@ const router = express.Router();
 router.put(
   "/update-profile",
   protect,
-  upload.single("avatar"), // 👈 IMPORTANT (must match frontend key)
+  upload.single("avatar"), // must match frontend key
   updateProfile
 );
 
 // Change password (no file needed)
 router.put("/change-password", protect, changePassword);
+
+/*
+  📧 Request Email Change (Send OTP)
+*/
+router.post("/change-email/request", protect, requestEmailChange);
 
 export default router;

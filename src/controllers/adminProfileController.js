@@ -1,10 +1,14 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import Admin from "../models/Admin.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import cloudinary from "../utils/cloudinary.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 /* ===============================
    👤 UPDATE PROFILE
    Upload avatar ONLY when updating
+   (EMAIL CHANGE REMOVED FOR SECURITY)
 ================================ */
 export const updateProfile = async (req, res) => {
   try {
@@ -13,9 +17,8 @@ export const updateProfile = async (req, res) => {
     if (!admin)
       return res.status(401).json({ message: "Admin not authorized" });
 
-    // Update text fields
+    // Update ONLY name (email removed intentionally)
     admin.name = req.body.name?.trim() || admin.name;
-    admin.email = req.body.email?.trim() || admin.email;
 
     /* ===============================
        🖼️ HANDLE IMAGE UPDATE
@@ -97,5 +100,61 @@ export const changePassword = async (req, res) => {
   } catch (err) {
     console.error("Password change error:", err.message);
     res.status(500).json({ message: "Failed to change password" });
+  }
+};
+
+/* ===============================
+   📧 REQUEST EMAIL CHANGE (SEND OTP)
+================================ */
+export const requestEmailChange = async (req, res) => {
+  try {
+    const admin = req.admin;
+    const { oldEmail, newEmail, confirmEmail } = req.body;
+
+    if (!admin)
+      return res.status(401).json({ message: "Admin not authorized" });
+
+    // verify old email
+    if (admin.email !== oldEmail)
+      return res.status(400).json({ message: "Current email incorrect" });
+
+    // confirm match
+    if (newEmail !== confirmEmail)
+      return res.status(400).json({ message: "Emails do not match" });
+
+    // check already used
+    const exists = await Admin.findOne({ email: newEmail });
+    if (exists)
+      return res.status(400).json({ message: "Email already in use" });
+
+    // generate otp
+    const otp = crypto.randomInt(100000, 999999).toString();
+
+    // save temp change
+    admin.emailChange = {
+      newEmail,
+      otp,
+      otpExpire: Date.now() + 5 * 60 * 1000,
+    };
+
+    await admin.save();
+
+    // send otp to old email
+    await sendEmail({
+      to: admin.email,
+      subject: "Verify your email change",
+      html: `
+        <h2>Email Change Request</h2>
+        <p>You requested to change your admin email.</p>
+        <h1>${otp}</h1>
+        <p>This code expires in 5 minutes.</p>
+      `,
+    });
+
+    res.json({ message: "OTP sent to your current email" });
+
+  } catch (error) {
+    console.error("Email change request error:", error.message);
+    res.status(500).json({ message: "Failed to send OTP" });
   }
 };

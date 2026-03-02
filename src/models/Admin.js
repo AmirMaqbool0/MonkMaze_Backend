@@ -31,7 +31,6 @@ const adminSchema = new mongoose.Schema(
       default: false,
     },
 
-    // 🔥 PROFILE IMAGE (Cloudinary)
     avatar: {
       url: {
         type: String,
@@ -45,6 +44,22 @@ const adminSchema = new mongoose.Schema(
 
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+
+    // ⭐ NEW — EMAIL CHANGE VERIFICATION
+    emailChange: {
+      newEmail: {
+        type: String,
+        default: null,
+      },
+      otp: {
+        type: String,
+        default: null,
+      },
+      otpExpire: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   { timestamps: true }
 );
